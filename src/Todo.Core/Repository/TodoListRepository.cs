@@ -82,11 +82,8 @@ internal class TodoListRepository : RepositoryBase, ITodoListRepository
     public async Task<TodoList?> GetDefaultListAsync()
     {
         var client = new GraphServiceClient(AuthenticationProvider);
-        var lists = await client.Me.Todo.Lists.GetAsync(requestConfiguration =>
-        {
-            requestConfiguration.QueryParameters.Filter = "wellKnownListName eq 'defaultList'";
-        });
-        var list = lists?.Value?.FirstOrDefault();
+        var lists = await client.Me.Todo.Lists.GetAsync();
+        var list = lists?.Value?.FirstOrDefault(l => l.WellknownListName == WellknownListName.DefaultList);
         return list is null ? null : new TodoList
         {
             Id = list.Id,
