@@ -78,4 +78,25 @@ internal class TodoListRepository : RepositoryBase, ITodoListRepository
         var client = new GraphServiceClient(AuthenticationProvider);
         await client.Me.Todo.Lists[list.Id].DeleteAsync();
     }
+
+    public async Task<TodoList?> GetDefaultListAsync()
+    {
+        var client = new GraphServiceClient(AuthenticationProvider);
+        var lists = await client.Me.Todo.Lists.GetAsync();
+        var list = lists?.Value?.FirstOrDefault(l => l.WellknownListName == WellknownListName.DefaultList);
+        return list is null ? null : new TodoList
+        {
+            Id = list.Id,
+            Name = list.DisplayName,
+            Tasks = list.Tasks?.Select(t => new TodoItem
+            {
+                Id = t.Id,
+                Subject = t.Title,
+                IsCompleted = t.Status == Microsoft.Graph.Models.TaskStatus.Completed,
+                ListId = list.Id,
+                Completed = t.CompletedDateTime?.ToDateTime(),
+                Status = t.Status?.ToString() ?? "Unknown"
+            }).ToList() ?? new()
+        };
+    }
 }

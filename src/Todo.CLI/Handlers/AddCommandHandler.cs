@@ -70,27 +70,35 @@ public class AddCommandHandler
         }
     }
 
-    private async Task<int> HandleItemAsync(string listName, string subject, bool star)
+    private async Task<int> HandleItemAsync(string subject, string listName, bool star)
     {
         try
         {
-            if (string.IsNullOrEmpty(listName))
-            {
-                _userInteraction.ShowError("List name is required to add an item.");
-                return 1;
-            }
-
             if (string.IsNullOrEmpty(subject))
             {
                 _userInteraction.ShowError("Subject is required to add an item.");
                 return 1;
             }
 
-            var list = await _todoListRepository.GetByNameAsync(listName);
-            if (list == null)
+            TodoList? list;
+
+            if (string.IsNullOrEmpty(listName))
             {
-                _userInteraction.ShowError($"No list found with the name '{listName}'.");
-                return 1;
+                list = await _todoListRepository.GetDefaultListAsync();
+                if (list == null)
+                {
+                    _userInteraction.ShowError("Default list not found. Please specify a list.");
+                    return 1;
+                }
+            }
+            else
+            {
+                list = await _todoListRepository.GetByNameAsync(listName);
+                if (list == null)
+                {
+                    _userInteraction.ShowError($"No list found with the name '{listName}'.");
+                    return 1;
+                }
             }
 
             await _todoItemRepository.AddAsync(new TodoItem
@@ -99,7 +107,8 @@ public class AddCommandHandler
                 ListId = list.Id,
                 IsImportant = star
             });
-            _userInteraction.ShowSuccess($"Item '{subject}' added to list '{listName}' successfully.");
+
+            _userInteraction.ShowSuccess($"Item '{subject}' added to list '{list.Name}' successfully.");
             return 0;
         }
         catch (Exception ex)
